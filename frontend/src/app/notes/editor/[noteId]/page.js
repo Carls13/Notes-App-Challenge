@@ -13,8 +13,85 @@ import { useAuth } from '@/context/AuthProvider';
 import withAuth from '@/hoc/withAuth';
 import { formatDate } from '@/lib/utils';
 
+const CreateCategoryModal = ({ onClose, selectNewlyCreatedCategory }) => {
+    const OPTIONS = ["#FF5733", "#33FF57", "#3357FF", "#F333FF", "#33FFF5", "#F5FF33"];
 
-const CategorySelector = ({ categories, categoryId, onCategoryChange }) => (
+    const [categoryName, setCategoryName] = useState("");
+    const [selectedColor, setSelectedColor] = useState(null);
+    const [loadingNewCategory, setLoadingNewCategory] = useState(false);
+    const [error, setError] = useState(null);
+
+    const isDisabledButton = !categoryName || !selectedColor;
+
+    const handleCreateCategory = async () => {
+        if (isDisabledButton) return;
+
+        setLoadingNewCategory(true);
+        
+        // Logic to create category goes here
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/categories/`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Token ${getToken()}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: categoryName,
+                    color: selectedColor,
+                }),
+            })
+            if (!response.ok) {
+                setError('Network response was not ok')
+            }
+            const data = await response.json()
+            const newCategory = {
+                id: data.id,
+                name: categoryName,
+                color: selectedColor,
+            };
+            selectNewlyCreatedCategory(newCategory)
+        } catch (error) {
+            setError(error.message)
+        } finally {
+            setLoadingNewCategory(false);
+        }
+
+    }
+    
+    // Modal with header, input for category name, color picker, and create button
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-96">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold">Create New Category</h2>
+                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700">&times;</button>
+                </div>
+                <div className="mb-4">
+                    <Label className="block mb-2">Category Name</Label>
+                    <Input onChange={(e) => setCategoryName(e.target.value)} name="categoryName" className="w-full" placeholder="Enter category name" />
+                </div>
+                <div className="mb-4">
+                    <Label className="block mb-2">Category Color</Label>
+                    {
+                        OPTIONS.map((color, index) => (
+                            <Circle onClick={() => setSelectedColor(color)} key={index} className="w-8 h-8 mr-2" fill={color} strokeWidth={selectedColor === color ? 2 : 0} />
+                        ))
+                    }
+                </div>
+                {
+                    error && <div className="text-red-500 mb-4">{error}</div>
+                }
+                <div className="flex justify-end">
+                    <button disabled={isDisabledButton || loadingNewCategory} onClick={handleCreateCategory} className="px-4 py-2 bg-[#957139] text-white rounded-md">Create</button>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+
+const CategorySelector = ({ categories, categoryId, onCategoryChange, onNewCategoryClick }) => (
     <Select value={categoryId} onValueChange={onCategoryChange}>
         <SelectTrigger className="w-[240px] h-10 rounded-md border border-[#957139]">
             <SelectValue placeholder="Select Category" />
@@ -29,6 +106,8 @@ const CategorySelector = ({ categories, categoryId, onCategoryChange }) => (
                 </SelectItem>
             ))}
         </SelectContent>
+        <hr />
+        <div onClick={onNewCategoryClick} className="px-3 py-2 text-sm text-gray-500">+ Create New Category</div>
     </Select>
 )
 
@@ -44,9 +123,9 @@ const CloseButton = () => {
     )
 }
 
-const Header = ({ categories, categoryId, onCategoryChange }) => (
+const Header = ({ categories, categoryId, onCategoryChange, onNewCategoryClick }) => (
     <header className="flex justify-between items-center mb-4">
-        <CategorySelector categories={categories} categoryId={categoryId} onCategoryChange={onCategoryChange} />
+        <CategorySelector categories={categories} categoryId={categoryId} onCategoryChange={onCategoryChange} onNewCategoryClick={onNewCategoryClick} />
         <CloseButton />
     </header>
 )
@@ -89,6 +168,8 @@ const NoteEditorPage = () => {
     const [lastEdited, setLastEdited] = useState(null)
     const [version, setVersion] = useState(null)
     const [isSaving, setIsSaving] = useState(false)
+    const [wantsToCreateNewCategory, setWantsToCreateNewCategory] = useState(false)
+
     const params = useParams()
     const noteId = params.noteId
 
@@ -216,11 +297,16 @@ const NoteEditorPage = () => {
         return category ? category.color : 'gray'
     }, [categoryId, categories])
 
+    const handleCategoryCreated = (newCategory) => {
+        setCategories(prev => [...prev, newCategory])
+        setCategoryId(newCategory.id)
+    }
+
     // render
     return (
         <div className="bg-[#faf1e3] h-screen flex flex-col">
             <div className="px-4 md:px-8 lg:px-12 pt-4 md:pt-8 lg:pt-12">
-                <Header categories={categories} categoryId={categoryId} onCategoryChange={handleCategoryIdChange} />
+                <Header categories={categories} categoryId={categoryId} onCategoryChange={handleCategoryIdChange} onNewCategoryClick={() => setWantsToCreateNewCategory(true)} />
             </div>
             <div className="px-4 md:px-8 lg:px-12 pb-4 md:pb-8 lg:pb-12 flex-1">
                 <NoteCard
@@ -233,6 +319,7 @@ const NoteEditorPage = () => {
                     isSaving={isSaving}
                 />
             </div>
+            {wantsToCreateNewCategory && <CreateCategoryModal onClose={() => setWantsToCreateNewCategory(false)} handleCategoryCreated={handleCategoryCreated} />}
         </div>
     )
 }
