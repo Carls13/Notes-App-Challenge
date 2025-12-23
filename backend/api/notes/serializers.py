@@ -13,6 +13,23 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = ('id', 'name', 'color', 'note_count')
         read_only_fields = ('id', 'note_count')
+    
+    def validate_name(self, value):
+        """
+        Validate that the category name is unique for the user.
+        """
+        user = self.context['request'].user
+        if Category.objects.filter(user=user, name=value).exists():
+            raise serializers.ValidationError("Category with this name already exists.")
+        return value
+    
+    def validate_color(self, value):
+        if not value.startswith('#'):
+            raise serializers.ValidationError("Color must be a hex value starting with #.")
+        user = self.context['request'].user
+        if Category.objects.filter(user=user, color=value).exists():
+            raise serializers.ValidationError("Category with this color already exists.")
+        return value
 
     def create(self, validated_data):
         """

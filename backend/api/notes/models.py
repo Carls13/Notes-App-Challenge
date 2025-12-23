@@ -14,6 +14,12 @@ class Category(models.Model):
         max_length=7,
         validators=[validate_hex_color]
     )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='categories',
+        null=True   
+    )
 
     class Meta:
         verbose_name_plural = 'Categories'
