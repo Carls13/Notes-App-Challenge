@@ -18,7 +18,7 @@ class Category(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='categories',
-        default=None
+        null=True   
     )
 
     class Meta:

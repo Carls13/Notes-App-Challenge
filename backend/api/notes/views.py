@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.models import Q
+from django.db.models import Q
 from api.notes.models import Note, Category
 from api.notes.serializers import NoteSerializer, CategorySerializer
 from api.users.permissions import IsOwnerOrReadOnly
@@ -56,8 +56,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
         """
         # Return user categories or categories with None user (public categories)
         return Category.objects.filter(Q(user=self.request.user) | Q(user=None)).order_by('name')
-        
-    
+
     def perform_create(self, serializer):
         """Save the category with the current user as the owner."""
         serializer.save(user=self.request.user)

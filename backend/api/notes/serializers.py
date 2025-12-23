@@ -29,6 +29,7 @@ class CategorySerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         if Category.objects.filter(user=user, color=value).exists():
             raise serializers.ValidationError("Category with this color already exists.")
+        return value
 
     def create(self, validated_data):
         """

@@ -13,7 +13,7 @@ import { useAuth } from '@/context/AuthProvider';
 import withAuth from '@/hoc/withAuth';
 import { formatDate } from '@/lib/utils';
 
-const CreateCategoryModal = ({ onClose, selectNewlyCreatedCategory }) => {
+const CreateCategoryModal = ({ onClose, handleCategoryCreated }) => {
     const OPTIONS = ["#FF5733", "#33FF57", "#3357FF", "#F333FF", "#33FFF5", "#F5FF33"];
 
     const [categoryName, setCategoryName] = useState("");
@@ -21,12 +21,15 @@ const CreateCategoryModal = ({ onClose, selectNewlyCreatedCategory }) => {
     const [loadingNewCategory, setLoadingNewCategory] = useState(false);
     const [error, setError] = useState(null);
 
+    const { getToken } = useAuth()
+
     const isDisabledButton = !categoryName || !selectedColor;
 
     const handleCreateCategory = async () => {
         if (isDisabledButton) return;
 
         setLoadingNewCategory(true);
+        setError(null);
         
         // Logic to create category goes here
         try {
@@ -50,7 +53,8 @@ const CreateCategoryModal = ({ onClose, selectNewlyCreatedCategory }) => {
                 name: categoryName,
                 color: selectedColor,
             };
-            selectNewlyCreatedCategory(newCategory)
+            handleCategoryCreated(newCategory)
+            onClose();
         } catch (error) {
             setError(error.message)
         } finally {
@@ -68,22 +72,22 @@ const CreateCategoryModal = ({ onClose, selectNewlyCreatedCategory }) => {
                     <button onClick={onClose} className="text-gray-500 hover:text-gray-700">&times;</button>
                 </div>
                 <div className="mb-4">
-                    <Label className="block mb-2">Category Name</Label>
-                    <Input onChange={(e) => setCategoryName(e.target.value)} name="categoryName" className="w-full" placeholder="Enter category name" />
+                    <Input onChange={(e) => setCategoryName(e.target.value)} name="categoryName" className="w-full border border-[#957139]" placeholder="Enter name..." />
                 </div>
                 <div className="mb-4">
-                    <Label className="block mb-2">Category Color</Label>
-                    {
-                        OPTIONS.map((color, index) => (
-                            <Circle onClick={() => setSelectedColor(color)} key={index} className="w-8 h-8 mr-2" fill={color} strokeWidth={selectedColor === color ? 2 : 0} />
-                        ))
-                    }
+                    <div className="flex items-center justify-center border border-[#957139] px-4 py-2 gap-6 rounded">
+                        {
+                            OPTIONS.map((color, index) => (
+                                <Circle onClick={() => setSelectedColor(color)} key={index} className="w-4 h-4 cursor-pointer" fill={color} strokeWidth={selectedColor === color ? 2 : 0} />
+                            ))
+                        }
+                    </div>
                 </div>
                 {
                     error && <div className="text-red-500 mb-4">{error}</div>
                 }
                 <div className="flex justify-end">
-                    <button disabled={isDisabledButton || loadingNewCategory} onClick={handleCreateCategory} className="px-4 py-2 bg-[#957139] text-white rounded-md">Create</button>
+                    <button disabled={isDisabledButton || loadingNewCategory} onClick={handleCreateCategory} className="px-4 py-2 bg-[#957139] text-white rounded-md cursor-pointer">Create</button>
                 </div>
             </div>
         </div>
@@ -105,9 +109,9 @@ const CategorySelector = ({ categories, categoryId, onCategoryChange, onNewCateg
                     </div>
                 </SelectItem>
             ))}
+            <hr />
+            <div onClick={onNewCategoryClick} className="px-3 py-3 text-sm text-gray-500 cursor-pointer">+ Create New Category</div>
         </SelectContent>
-        <hr />
-        <div onClick={onNewCategoryClick} className="px-3 py-2 text-sm text-gray-500">+ Create New Category</div>
     </Select>
 )
 
